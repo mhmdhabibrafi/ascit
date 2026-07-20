@@ -1,0 +1,41 @@
+services:
+  ascit-db:
+    image: postgres:15-alpine
+    container_name: ascit-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ascit_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AscitLocal2026}
+      POSTGRES_DB: ${POSTGRES_DB:-ascit_db}
+    ports:
+      - "5434:5432" # Port host diubah ke 5434 agar tidak bentrok dengan postgres lain di VPS
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ascit_app -d ascit_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  ascit-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ascit-app
+    ports:
+      - "3001:3000"
+    depends_on:
+      ascit-db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ascit_app}:${POSTGRES_PASSWORD:-AscitLocal2026}@ascit-db:5432/${POSTGRES_DB:-ascit_db}?schema=public
+      - NEXTAUTH_URL=https://ascit.mhmdhabibrafi.me
+    command: sh -c "npx prisma migrate deploy && node server.js"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

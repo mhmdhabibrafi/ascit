@@ -1,0 +1,26 @@
+tunnel: bb45d845-129b-4961-a2a6-7067fb6acc74
+credentials-file: /etc/cloudflared/bb45d845-129b-4961-a2a6-7067fb6acc74.json
+
+ingress:
+  - hostname: server.mhmdhabibrafi.me
+    service: ssh://host.docker.internal:22
+
+  - hostname: npm.mhmdhabibrafi.me
+    service: http://host.docker.internal:81
+
+  - hostname: cloud.mhmdhabibrafi.me
+    service: http://host.docker.internal:8080
+
+  - hostname: homepage.mhmdhabibrafi.me
+    service: http://host.docker.internal:3000
+
+  - hostname: dockge.mhmdhabibrafi.me
+    service: http://host.docker.internal:5001
+
+  - hostname: monitor.mhmdhabibrafi.me
+    service: http://host.docker.internal:8090
+
+  - hostname: ascit.mhmdhabibrafi.me
+    service: http://host.docker.internal:3001
+
+  - service: http_status:404

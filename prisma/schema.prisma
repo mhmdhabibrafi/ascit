@@ -1,0 +1,425 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  SUPER_ADMIN
+  ADMIN_IT
+  STAF_IT
+  KEPALA_IT
+  MANAJEMEN
+}
+
+enum AssetConditionStatus {
+  BAIK
+  RUSAK_RINGAN
+  RUSAK_BERAT
+  LAYAK_GANTI
+  DIHAPUS
+}
+
+enum AssetLifecycleStatus {
+  PENGADAAN
+  PENERIMAAN
+  INSTALASI
+  AKTIF
+  DIPINDAHKAN
+  DIPINJAM
+  MAINTENANCE
+  DALAM_PERBAIKAN
+  RUSAK
+  LAYAK_GANTI
+  DIHAPUS
+}
+
+enum MutationApprovalStatus {
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+  DIBATALKAN
+}
+
+enum ServiceRecordType {
+  PREVENTIVE
+  CORRECTIVE
+}
+
+enum ServiceRecordStatus {
+  TERJADWAL
+  SEDANG_DIKERJAKAN
+  SELESAI
+  DIBATALKAN
+}
+
+enum AiScoreStatus {
+  AMAN
+  PERLU_DIPANTAU
+  DIREKOMENDASIKAN_UPGRADE
+  PRIORITAS_PENGGANTIAN
+}
+
+enum AiRecommendationType {
+  UPGRADE
+  REPLACE
+  DECOMMISSION
+}
+
+enum AiPriority {
+  rendah
+  sedang
+  tinggi
+  kritis
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        RoleName @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+}
+
+model User {
+  id                      String                  @id @default(cuid())
+  email                   String                  @unique
+  name                    String
+  passwordHash            String
+  roleId                  String
+  role                    Role                    @relation(fields: [roleId], references: [id])
+  isActive                Boolean                 @default(true)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  responsibleAssets       Asset[]                 @relation("ResponsibleUser")
+  createdAssets           Asset[]                 @relation("CreatedBy")
+  createdLifecycleLogs    AssetLifecycleLog[]     @relation("LifecycleCreatedBy")
+  createdMutations        AssetMutation[]         @relation("MutationCreatedBy")
+  approvedMutations       AssetMutation[]         @relation("MutationApprovedBy")
+  oldMutationOwners       AssetMutation[]         @relation("OldResponsibleUser")
+  newMutationOwners       AssetMutation[]         @relation("NewResponsibleUser")
+  createdServiceRecords   ServiceRecord[]         @relation("ServiceRecordCreatedBy")
+  reviewedRecommendations AiAssetRecommendation[] @relation("RecommendationReviewedBy")
+  aiAnalysisRuns          AiAnalysisRun[]         @relation("AiRunCreatedBy")
+  auditLogs               AuditLog[]
+  notificationReads       NotificationRead[]
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
+
+model Unit {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  code           String          @unique
+  description    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  rooms          Room[]
+  assets         Asset[]
+  fromMutations  AssetMutation[] @relation("FromUnit")
+  toMutations    AssetMutation[] @relation("ToUnit")
+  aiAnalysisRuns AiAnalysisRun[]
+}
+
+model Room {
+  id            String          @id @default(cuid())
+  name          String
+  code          String
+  unitId        String
+  unit          Unit            @relation(fields: [unitId], references: [id])
+  description   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  assets        Asset[]
+  fromMutations AssetMutation[] @relation("FromRoom")
+  toMutations   AssetMutation[] @relation("ToRoom")
+
+  @@unique([unitId, name])
+  @@unique([unitId, code])
+}
+
+model AssetCategory {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  code           String          @unique
+  description    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  assets         Asset[]
+  aiAnalysisRuns AiAnalysisRun[]
+}
+
+model Segment {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assets      Asset[]
+}
+
+model Brand {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assets      Asset[]
+}
+
+model Vendor {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  contact   String?
+  phone     String?
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  assets    Asset[]
+}
+
+model Technician {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  phone     String?
+  specialty String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Asset {
+  id                         String                           @id @default(cuid())
+  assetCode                  String                           @unique
+  assetName                  String
+  categoryId                 String
+  category                   AssetCategory                    @relation(fields: [categoryId], references: [id])
+  brandId                    String
+  brand                      Brand                            @relation(fields: [brandId], references: [id])
+  vendorId                   String
+  vendor                     Vendor                           @relation(fields: [vendorId], references: [id])
+  unitId                     String
+  unit                       Unit                             @relation(fields: [unitId], references: [id])
+  roomId                     String
+  room                       Room                             @relation(fields: [roomId], references: [id])
+  segmentId                  String?
+  segment                    Segment?                         @relation(fields: [segmentId], references: [id])
+  responsibleUserId          String?
+  responsibleUser            User?                            @relation("ResponsibleUser", fields: [responsibleUserId], references: [id])
+  model                      String?
+  serialNumber               String?                          @unique
+  ipAddress                  String?
+  macAddress                 String?
+  operatingSystem            String?
+  processor                  String?
+  ram                        String?
+  storage                    String?
+  purchaseDate               DateTime?
+  purchasePrice              Decimal                          @default(0) @db.Decimal(16, 2)
+  invoiceNumber              String?
+  warrantyStartDate          DateTime?
+  warrantyEndDate            DateTime?
+  conditionStatus            AssetConditionStatus             @default(BAIK)
+  lifecycleStatus            AssetLifecycleStatus             @default(AKTIF)
+  qrToken                    String                           @unique
+  qrCodeUrl                  String?                          @db.Text
+  photoUrl                   String?
+  notes                      String?                          @db.Text
+  createdById                String?
+  createdBy                  User?                            @relation("CreatedBy", fields: [createdById], references: [id])
+  createdAt                  DateTime                         @default(now())
+  updatedAt                  DateTime                         @updatedAt
+  deletedAt                  DateTime?
+  lifecycleLogs              AssetLifecycleLog[]
+  mutations                  AssetMutation[]
+  serviceRecords             ServiceRecord[]
+  replacementRecommendations AssetReplacementRecommendation[]
+  aiRecommendations          AiAssetRecommendation[]
+
+  @@index([assetName])
+  @@index([conditionStatus])
+  @@index([lifecycleStatus])
+  @@index([deletedAt])
+  @@index([unitId])
+  @@index([roomId])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([vendorId])
+  @@index([segmentId])
+}
+
+model AssetLifecycleLog {
+  id          String               @id @default(cuid())
+  assetId     String
+  asset       Asset                @relation(fields: [assetId], references: [id])
+  status      AssetLifecycleStatus
+  description String?
+  createdById String?
+  createdBy   User?                @relation("LifecycleCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime             @default(now())
+}
+
+model AssetMutation {
+  id                   String                 @id @default(cuid())
+  assetId              String
+  asset                Asset                  @relation(fields: [assetId], references: [id])
+  fromUnitId           String
+  fromUnit             Unit                   @relation("FromUnit", fields: [fromUnitId], references: [id])
+  fromRoomId           String
+  fromRoom             Room                   @relation("FromRoom", fields: [fromRoomId], references: [id])
+  toUnitId             String
+  toUnit               Unit                   @relation("ToUnit", fields: [toUnitId], references: [id])
+  toRoomId             String
+  toRoom               Room                   @relation("ToRoom", fields: [toRoomId], references: [id])
+  oldResponsibleUserId String?
+  oldResponsibleUser   User?                  @relation("OldResponsibleUser", fields: [oldResponsibleUserId], references: [id])
+  newResponsibleUserId String?
+  newResponsibleUser   User?                  @relation("NewResponsibleUser", fields: [newResponsibleUserId], references: [id])
+  mutationDate         DateTime
+  reason               String
+  approvalStatus       MutationApprovalStatus @default(MENUNGGU)
+  approvedById         String?
+  approvedBy           User?                  @relation("MutationApprovedBy", fields: [approvedById], references: [id])
+  approvedAt           DateTime?
+  notes                String?
+  createdById          String?
+  createdBy            User?                  @relation("MutationCreatedBy", fields: [createdById], references: [id])
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@index([approvalStatus])
+}
+
+model ServiceRecord {
+  id                 String              @id @default(cuid())
+  assetId            String
+  asset              Asset               @relation(fields: [assetId], references: [id])
+  type               ServiceRecordType
+  status             ServiceRecordStatus @default(TERJADWAL)
+  scheduledDate      DateTime?
+  completedDate      DateTime?
+  technicianName     String?
+  symptoms           String?             @db.Text
+  actionTaken        String?             @db.Text
+  replacedComponents String?             @db.Text
+  checklist          Json?
+  cost               Decimal             @default(0) @db.Decimal(16, 2)
+  notes              String?             @db.Text
+  createdById        String?
+  createdBy          User?               @relation("ServiceRecordCreatedBy", fields: [createdById], references: [id])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([assetId])
+  @@index([status])
+}
+
+model AssetReplacementRecommendation {
+  id                  String                 @id @default(cuid())
+  assetId             String
+  asset               Asset                  @relation(fields: [assetId], references: [id])
+  score               Int
+  status              AiScoreStatus
+  recommendationTypes AiRecommendationType[]
+  reason              String                 @db.Text
+  source              String                 @default("RULE_ENGINE")
+  year                Int
+  isApproved          Boolean                @default(false)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+}
+
+model AiAnalysisRun {
+  id              String                  @id @default(cuid())
+  runCode         String                  @unique
+  year            Int
+  unitId          String?
+  unit            Unit?                   @relation(fields: [unitId], references: [id])
+  categoryId      String?
+  category        AssetCategory?          @relation(fields: [categoryId], references: [id])
+  totalAssets     Int
+  model           String?
+  summary         String?                 @db.Text
+  createdById     String?
+  createdBy       User?                   @relation("AiRunCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime                @default(now())
+  recommendations AiAssetRecommendation[]
+}
+
+model AiAssetRecommendation {
+  id                    String                   @id @default(cuid())
+  runId                 String
+  run                   AiAnalysisRun            @relation(fields: [runId], references: [id])
+  assetId               String
+  asset                 Asset                    @relation(fields: [assetId], references: [id])
+  score                 Int
+  scoreStatus           AiScoreStatus
+  recommendationTypes   AiRecommendationType[]
+  priority              AiPriority
+  summary               String                   @db.Text
+  recommendation        String                   @db.Text
+  reason                String                   @db.Text
+  nextYearPlan          String?                  @db.Text
+  openModelSucceeded    Boolean                  @default(false)
+  openModelErrorMessage String?
+  reviewedById          String?
+  reviewedBy            User?                    @relation("RecommendationReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt            DateTime?
+  createdAt             DateTime                 @default(now())
+  details               AiRecommendationDetail[]
+}
+
+model AiRecommendationDetail {
+  id                      String                @id @default(cuid())
+  aiAssetRecommendationId String
+  aiAssetRecommendation   AiAssetRecommendation @relation(fields: [aiAssetRecommendationId], references: [id])
+  factor                  String
+  scoreImpact             Int
+  message                 String
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String
+  module      String
+  targetModel String?
+  targetId    String?
+  diff        Json?
+  description String   @db.Text
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  notificationReads NotificationRead[]
+
+  @@index([createdAt])
+  @@index([module])
+}
+
+model NotificationRead {
+  id         String   @id @default(cuid())
+  userId     String
+  auditLogId String
+  readAt     DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auditLog   AuditLog @relation(fields: [auditLogId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, auditLogId])
+  @@index([userId, readAt])
+  @@index([auditLogId])
+}
