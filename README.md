@@ -2,211 +2,313 @@
 
 **Asset Care Information Technology System**
 
-ASCIT adalah sistem informasi manajemen aset teknologi informasi berbasis web untuk RS Awal Bros Panam. Sistem ini mengelola data aset IT, QR Code, lifecycle aset, mutasi, maintenance, perbaikan, garansi, monitoring umur aset, laporan, audit log, dan AI Decision Support.
+ASCIT adalah sistem informasi manajemen aset teknologi informasi berbasis web untuk RS Awal Bros Panam. Sistem ini membantu tim IT mengelola inventaris, QR Code, siklus hidup aset, mutasi, pemeliharaan, perbaikan, garansi, laporan, audit log, dan rekomendasi penggantian aset.
 
-Tagline: **AI Powered IT Asset Management for Hospital Operations**
+> **AI Powered IT Asset Management for Hospital Operations**
 
-## Catatan Data
+## Batasan Data
 
-ASCIT hanya menyimpan data aset teknologi informasi. Sistem ini tidak menggunakan data pasien, rekam medis, diagnosis, tindakan medis, resep, billing, atau data klinis.
+ASCIT hanya menyimpan data aset teknologi informasi. Sistem ini tidak dirancang untuk menyimpan data pasien, rekam medis, diagnosis, tindakan medis, resep, billing, atau data klinis lainnya.
 
 ## Fitur Utama
 
-- Login credentials dengan hash bcrypt.
-- Role pengguna: SUPER_ADMIN, ADMIN_IT, STAF_IT, KEPALA_IT, MANAJEMEN.
-- Dashboard statistik dan grafik Recharts.
-- CRUD Data Aset IT dengan soft delete.
-- QR Code aset dan cetak QR.
-- Scan QR simulasi dari kode aset atau token QR.
-- Mutasi aset dengan approval Kepala IT/Admin.
-- Maintenance aset dengan checklist komputer dan jaringan.
-- Perbaikan aset, biaya, status akhir, dan rekomendasi penggantian.
-- Monitoring garansi otomatis: aktif, hampir habis, habis.
-- Monitoring umur aset: kurang dari 3 tahun, 3 sampai 5 tahun, lebih dari 5 tahun.
-- AI Decision Support berbasis rule engine dan OpenModel API server-side.
-- Rekomendasi penggantian aset.
-- Laporan, export CSV, dan print.
-- Master data unit, ruangan, kategori, merek, vendor, teknisi.
-- Pengguna dan hak akses.
-- Audit log aktivitas penting.
+- Login berbasis credentials dengan password bcrypt.
+- Hak akses `SUPER_ADMIN`, `ADMIN_IT`, `STAF_IT`, `KEPALA_IT`, dan `MANAJEMEN`.
+- Dashboard statistik, grafik, dan monitoring kondisi aset.
+- Pengelolaan aset IT dengan soft delete.
+- Pembuatan, pencetakan, dan pemindaian QR Code aset.
+- Mutasi aset dan alur persetujuan.
+- Jadwal maintenance dan catatan perbaikan.
+- Monitoring garansi dan umur aset.
+- Rule engine untuk rekomendasi penggantian aset.
+- Penjelasan berbantuan AI yang dapat diaktifkan secara opsional.
+- Laporan, ekspor CSV, dan print.
+- Master data unit, ruangan, kategori, merek, vendor, dan teknisi.
+- Manajemen pengguna dan audit log.
 
-## Stack Teknologi
+## Teknologi
 
-- Next.js App Router
-- TypeScript
+- Next.js App Router dan TypeScript
 - PostgreSQL
 - Prisma ORM
 - Tailwind CSS
-- Komponen UI custom bergaya ShadCN
 - NextAuth Credentials Provider
-- bcryptjs
-- Recharts
-- qrcode
-- OpenModel API
+- Recharts dan QRCode
+- Docker Engine dan Docker Compose
 
-## Cara Install
+## Kebutuhan Sistem
+
+Untuk deployment portable:
+
+- Ubuntu Server 22.04/24.04 atau WSL2 Ubuntu
+- Docker Engine
+- Docker Compose plugin (`docker compose`)
+- Git, jika mengambil source langsung dari repository
+
+## Quick Start dengan Docker
+
+Clone repository:
 
 ```bash
-npm install
+git clone https://github.com/mhmdhabibrafi/ascit.git
+cd ascit
 ```
 
-Salin file env:
+Siapkan konfigurasi:
 
 ```bash
-copy .env.example .env
+cp .env.example .env
+nano .env
+chmod 600 .env
 ```
 
-Isi `.env`:
+Nilai berikut wajib diganti sebelum penggunaan produksi:
 
 ```env
-DATABASE_URL="postgresql://ascit_app:AscitLocal2026@localhost:5432/ascit_db?schema=public"
-FLYENV_POSTGRES_ADMIN_USER="root"
-FLYENV_POSTGRES_BIN_DIR="C:\\Program Files\\FlyEnv-Data\\app\\postgresql-18.4\\pgsql\\bin"
-FLYENV_POSTGRES_DATA_DIR="C:\\FlyENV\\FlyEnv-Data\\server\\postgresql\\postgresql18"
-NEXTAUTH_SECRET="ganti-dengan-secret-acak-minimal-32-karakter"
-NEXTAUTH_URL="http://localhost:3000"
-SEED_ADMIN_PASSWORD="ganti-password-admin-kuat-2026"
-SEED_STAF_PASSWORD="ganti-password-staf-kuat-2026"
-SEED_KEPALA_PASSWORD="ganti-password-kepala-kuat-2026"
-SEED_MANAJEMEN_PASSWORD="ganti-password-manajemen-kuat-2026"
-OPENMODEL_API_KEY="isi_api_key_openmodel_di_sini"
-OPENMODEL_BASE_URL="https://api.openmodel.ai/v1"
-OPENMODEL_MODEL="deepseek-v4-flash"
-OPENMODEL_ANTHROPIC_VERSION="2023-06-01"
-OPENMODEL_MAX_TOKENS="1024"
+POSTGRES_PASSWORD=password-database-yang-kuat
+NEXTAUTH_SECRET=secret-acak-minimal-32-karakter
 ```
 
-## Setup Database
+Generate secret dengan:
 
-ASCIT memakai konfigurasi database dari `.env`, terutama `DATABASE_URL`.
-
-Database lokal dijalankan lewat PostgreSQL FlyEnv. Pastikan FlyEnv sudah terpasang, lalu jalankan:
-
-```powershell
-npm run db:setup
+```bash
+openssl rand -base64 32
 ```
 
-Script ini akan start PostgreSQL FlyEnv, membuat role/database dari `.env`, menjalankan migrasi Prisma, lalu seed role, user awal, master data, 25 aset IT dummy, mutasi, maintenance, perbaikan, warranty, audit log, dan rekomendasi AI dummy. Password user awal wajib diisi lewat `SEED_ADMIN_PASSWORD`, `SEED_STAF_PASSWORD`, `SEED_KEPALA_PASSWORD`, dan `SEED_MANAJEMEN_PASSWORD`.
+Jalankan aplikasi dan database:
 
-Cek koneksi database dari terminal:
-
-```powershell
-npm run flyenv:db:status
-npm run db:health
+```bash
+docker compose up -d --build
 ```
 
-Untuk mengecek koneksi database dari aplikasi, login ke ASCIT lalu buka menu **Pengaturan**. Panel **Status Database** menjalankan query langsung ke PostgreSQL dan menampilkan jumlah aset, pengguna, unit, serta audit log.
+Periksa status:
 
-## Menjalankan Aplikasi
+```bash
+docker compose ps
+docker compose logs --tail=100 ascit-app
+```
 
-Untuk pemakaian biasa atau demo, jalankan mode production lokal agar lebih cepat:
+## Inisialisasi Data Demo
+
+Migration dijalankan otomatis saat container aplikasi dimulai. Pada instalasi baru, jalankan seed satu kali untuk membuat role, akun awal, master data, aset contoh, dan data simulasi:
+
+```bash
+docker compose run --rm \
+  -e ALLOW_DESTRUCTIVE_SEED=true \
+  ascit-app npx tsx prisma/seed.ts
+```
+
+> **Peringatan:** seed bersifat destruktif dan menghapus data aplikasi yang sudah ada. Jangan menjalankannya ulang pada database produksi yang telah berisi data.
+
+## Akun Demo
+
+Nilai default `.env.example` membuat akun berikut:
+
+| Peran | Email | Password demo |
+|---|---|---|
+| Admin IT | `admin@ascit.local` | `ASCIT@123` |
+| Staf IT | `staf@ascit.local` | `ASCIT@123` |
+| Kepala IT | `kepala@ascit.local` | `ASCIT@123` |
+| Manajemen | `manajemen@ascit.local` | `ASCIT@123` |
+
+Password tersebut hanya untuk demo lokal. Ganti semua password sebelum penggunaan produksi.
+
+## Konfigurasi Akses
+
+### WSL atau komputer yang sama
+
+Gunakan:
+
+```env
+APP_BIND_IP=127.0.0.1
+APP_PORT=3000
+NEXTAUTH_URL=http://ascit.local:3000
+```
+
+Tambahkan ke file `hosts` Windows menggunakan PowerShell Administrator:
 
 ```powershell
-npm run build
-npm run start:flyenv
+Add-Content -Path "$env:windir\System32\drivers\etc\hosts" -Value "`n127.0.0.1 ascit.local"
+ipconfig /flushdns
 ```
 
 Buka:
 
 ```text
-http://localhost:3000
+http://ascit.local:3000
 ```
 
-Jika sedang coding dan butuh hot reload, pakai mode development:
+### Ubuntu Server dalam jaringan lokal
 
-```powershell
-npm run dev:flyenv
+Gunakan alamat IP statis server, misalnya `192.168.1.50`:
+
+```env
+APP_BIND_IP=0.0.0.0
+APP_PORT=3000
+NEXTAUTH_URL=http://192.168.1.50:3000
 ```
 
-Build production:
-
-```bash
-npm run build
-npm run start
-```
-
-## Akun Login Awal
-
-Seed membuat akun awal dengan email `admin@ascit.local`, `staf@ascit.local`, `kepala@ascit.local`, dan `manajemen@ascit.local`. Password tidak disimpan di dokumentasi; gunakan nilai kuat yang sudah Anda set di `.env`.
-
-## OpenModel API
-
-AI Decision Support menjalankan rule engine internal terlebih dahulu. OpenModel API hanya dipakai untuk membuat penjelasan natural language dalam bahasa Indonesia formal.
-
-Endpoint Messages API yang dipanggil server:
+Buka dari komputer di jaringan yang sama:
 
 ```text
-POST ${OPENMODEL_BASE_URL}/messages
+http://192.168.1.50:3000
 ```
 
-Header:
+Jangan melakukan port forwarding ke internet tanpa reverse proxy, HTTPS, autentikasi yang kuat, dan peninjauan keamanan.
 
-```text
-Authorization: Bearer ${OPENMODEL_API_KEY}
-anthropic-version: ${OPENMODEL_ANTHROPIC_VERSION}
-Content-Type: application/json
+## Konfigurasi AI Opsional
+
+ASCIT tetap dapat digunakan tanpa API AI. Rule engine internal tetap menghasilkan skor dan rekomendasi.
+
+Tanpa AI:
+
+```env
+GROQ_API_KEY=
+GROQ_BASE_URL=
+GROQ_MODEL=
 ```
 
-Body memakai format Anthropic Messages:
+Untuk provider OpenAI-compatible:
 
-```json
-{
-  "model": "deepseek-v4-flash",
-  "max_tokens": 1024,
-  "system": "Instruksi AI Decision Support ASCIT",
-  "messages": [{ "role": "user", "content": "Data aset dan skor rule engine" }],
-  "temperature": 0.2
-}
+```env
+GROQ_API_KEY=api-key-provider
+GROQ_BASE_URL=https://alamat-provider/v1
+GROQ_MODEL=nama-model
 ```
 
-Jika `OPENMODEL_API_KEY` belum diisi atau API gagal, ASCIT tetap menampilkan hasil rule engine dan menyimpan catatan bahwa penjelasan OpenModel gagal dibuat.
+Contoh Ollama pada komputer lain dalam jaringan:
 
-## Cara Mencoba AI Decision Support
-
-1. Login sebagai `admin@ascit.local` atau `kepala@ascit.local`.
-2. Buka menu **AI Decision Support**.
-3. Pilih tahun, unit, atau kategori jika perlu.
-4. Klik **Jalankan Analisis AI**.
-5. Lihat skor, status rekomendasi, alasan, dan detail aset.
-6. Export laporan AI melalui tombol CSV.
-
-## Troubleshooting Database
-
-Jika aplikasi menampilkan error koneksi database:
-
-1. Pastikan FlyEnv PostgreSQL berjalan.
-2. Pastikan database `ascit_db` sudah dibuat lewat `npm run db:setup`.
-3. Pastikan `DATABASE_URL` di `.env` benar.
-4. Jalankan ulang:
-
-```powershell
-npm run db:setup
-npm run dev:flyenv
+```env
+GROQ_API_KEY=ollama
+GROQ_BASE_URL=http://192.168.1.60:11434/v1
+GROQ_MODEL=llama3.2
 ```
 
-Jika FlyEnv menampilkan log seperti `could not bind IPv4 address "127.0.0.1"` atau `could not create any TCP/IP sockets`, cek apakah PostgreSQL lain sudah berjalan di port `5432`:
-
-```powershell
-netstat -ano | Select-String ":5432"
-```
-
-Gunakan satu server PostgreSQL saja untuk port `5432`. Untuk proyek ini, gunakan FlyEnv sebagai server utama dan jangan nyalakan service PostgreSQL Windows bersamaan.
-
-## Script Package
+Setelah mengubah `.env`, terapkan konfigurasi baru:
 
 ```bash
+docker compose up -d --force-recreate ascit-app
+```
+
+## Operasional Docker
+
+Melihat status:
+
+```bash
+docker compose ps
+```
+
+Mengikuti log aplikasi:
+
+```bash
+docker compose logs -f --tail=100 ascit-app
+```
+
+Restart:
+
+```bash
+docker compose restart
+```
+
+Menghentikan dan menjalankan kembali:
+
+```bash
+docker compose stop
+docker compose start
+```
+
+Update dari GitHub:
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Jangan gunakan perintah berikut pada sistem yang telah berisi data:
+
+```bash
+docker compose down -v
+```
+
+Opsi `-v` menghapus volume database.
+
+## Backup PostgreSQL
+
+Buat folder backup:
+
+```bash
+mkdir -p backups
+chmod 700 backups
+```
+
+Backup database:
+
+```bash
+docker compose exec -T ascit-db \
+  pg_dump -U ascit -d ascit \
+  > "backups/ascit-$(date +%F-%H%M).sql"
+```
+
+Jika nama database atau user di `.env` diubah, sesuaikan argumen `-U` dan `-d`.
+
+Restore database harus dilakukan dengan hati-hati dan idealnya diuji terlebih dahulu pada environment terpisah.
+
+## Troubleshooting
+
+### Aplikasi tidak dapat dibuka
+
+```bash
+docker compose ps
+docker compose logs --tail=200 ascit-app
+curl http://127.0.0.1:3000/api/health
+```
+
+Pastikan `APP_BIND_IP`, `APP_PORT`, firewall, dan IP server sudah benar.
+
+### Login ditolak pada instalasi baru
+
+Pastikan seed telah dijalankan:
+
+```bash
+docker compose run --rm \
+  -e ALLOW_DESTRUCTIVE_SEED=true \
+  ascit-app npx tsx prisma/seed.ts
+```
+
+Jalankan hanya untuk database baru atau data demo karena seed menghapus data lama.
+
+### Database tidak sehat
+
+```bash
+docker compose logs --tail=200 ascit-db
+docker compose restart ascit-db
+```
+
+### Perubahan `.env` belum terbaca
+
+```bash
+docker compose up -d --force-recreate
+```
+
+## Development Lokal Tanpa Docker
+
+```bash
+npm ci
+npx prisma generate
 npm run dev
-npm run dev:flyenv
-npm run build
-npm run start
-npm run start:flyenv
-npm run serve:flyenv
-npm run lint
-npm run db:setup
-npm run db:health
-npm run flyenv:db:start
-npm run flyenv:db:status
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:seed
 ```
+
+Development tanpa Docker memerlukan PostgreSQL dan `DATABASE_URL` yang telah dikonfigurasi sendiri. Workflow FlyEnv bersifat opsional dan khusus lingkungan pengembangan Windows.
+
+## Keamanan
+
+- Jangan commit `.env`, API key, secret, password produksi, atau backup database.
+- Commit hanya `.env.example` tanpa secret asli.
+- Gunakan password unik dan `NEXTAUTH_SECRET` acak.
+- Batasi port aplikasi menggunakan firewall dan jaringan internal.
+- Simpan backup pada perangkat atau server terpisah.
+- Ganti semua akun demo sebelum sistem digunakan secara operasional.
+
+## Lisensi dan Penggunaan
+
+Tambahkan informasi lisensi serta kebijakan penggunaan internal organisasi sebelum distribusi lebih lanjut.
