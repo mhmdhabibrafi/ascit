@@ -1,7 +1,7 @@
+FROM node:18-alpine AS base
 LABEL org.opencontainers.image.source="https://github.com/mhmdhabibrafi/ascit"
 LABEL org.opencontainers.image.description="ASCIT application"
 LABEL org.opencontainers.image.licenses="Proprietary"
-FROM node:18-alpine AS base
 
 # 1. Install dependencies only when needed
 FROM base AS deps
